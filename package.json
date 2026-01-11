@@ -7,9 +7,8 @@
   },
   "scripts": {
     "dev": "nodemon",
-    "build": "npm install && npx prisma generate && npx prisma migrate deploy",
-    "start": "node server.js",
-    "postinstall": "prisma generate",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
