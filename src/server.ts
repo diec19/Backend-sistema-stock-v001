@@ -7,6 +7,8 @@ import productsRoutes from './routes/products.routes.js';
 import importRoutes from './routes/import.routes.js';
 import salesRoutes from './routes/sales.routes.js';
 import cashRegisterRoutes from './routes/cashRegister.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import { authMiddleware } from './middlewares/auth.middleware.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 
 dotenv.config();
@@ -21,7 +23,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check
+// Health check (público)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -29,11 +31,14 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Routes
-app.use('/api/products', productsRoutes);
-app.use('/api/import', importRoutes);
-app.use('/api/sales', salesRoutes);
-app.use('/api/cash-register', cashRegisterRoutes);
+// Auth routes (público)
+app.use('/api/auth', authRoutes);
+
+// Protected routes (requieren autenticación)
+app.use('/api/products', authMiddleware, productsRoutes);
+app.use('/api/import', authMiddleware, importRoutes);
+app.use('/api/sales', authMiddleware, salesRoutes);
+app.use('/api/cash-register', authMiddleware, cashRegisterRoutes);
 
 // Error handling
 app.use(notFound);
