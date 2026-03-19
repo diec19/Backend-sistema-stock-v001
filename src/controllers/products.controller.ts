@@ -156,7 +156,7 @@ export const getLowStock = async (
     // Obtenemos todos los productos
     const allProducts = await prisma.product.findMany();
     
-    // Filtramos en memoria los que tienen stock bajo
+    // Filtramos en memoria los que tienen stock bajos
     const lowStockProducts = allProducts.filter((p:any) => p.stock <= p.minStock);
 
     res.json(lowStockProducts);
