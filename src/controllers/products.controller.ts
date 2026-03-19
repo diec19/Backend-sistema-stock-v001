@@ -8,19 +8,38 @@ export const getAllProducts = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { search } = req.query;
+    const { search, page = '1', limit = '10' } = req.query;
     
-    const products = await prisma.product.findMany({
-      where: search ? {
-        OR: [
-          { name: { contains: search as string, mode: 'insensitive' } },
-          { sku: { contains: search as string, mode: 'insensitive' } }
-        ]
-      } : {},
-      orderBy: { createdAt: 'desc' }
-    });
+    const pageNumber = parseInt(page as string);
+    const limitNumber = parseInt(limit as string);
+    const skip = (pageNumber - 1) * limitNumber;
 
-    res.json(products);
+    const where = search ? {
+      OR: [
+        { name: { contains: search as string, mode: 'insensitive' } },
+        { sku: { contains: search as string, mode: 'insensitive' } }
+      ]
+    } : {};
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNumber
+      }),
+      prisma.product.count({ where })
+    ]);
+
+    res.json({
+      data: products,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        totalPages: Math.ceil(total / limitNumber)
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -165,9 +184,9 @@ export const getStats = async (
       })
     ]);
 
-    const lowStockCount = products.filter(p => p.stock <= p.minStock).length;
+    const lowStockCount = products.filter((p:any )=> p.stock <= p.minStock).length;
     
-    const totalValue = products.reduce((sum, p) => {
+    const totalValue = products.reduce((sum: number, p:any) => {
       return sum + (parseFloat(p.price.toString()) * p.stock);
     }, 0);
 
