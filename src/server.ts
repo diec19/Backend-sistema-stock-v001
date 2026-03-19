@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import productsRoutes from './routes/products.routes.js';
 import importRoutes from './routes/import.routes.js';
+import salesRoutes from './routes/sales.routes.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/products', productsRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/sales', salesRoutes);
 
 // Error handling
 app.use(notFound);

@@ -1,24 +1,51 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Product {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   name        String
-  description String   @default("")
-  sku         String   @unique
-  price       Decimal  @db.Decimal(10, 2)
-  stock       Int      @default(0)
-  minStock    Int      @default(0) @map("min_stock")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  description String
+  sku         String      @unique
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int
+  minStock    Int         @map("min_stock")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  saleItems   SaleItem[]
 
   @@map("products")
   @@index([sku])
   @@index([name])
+}
+
+model Sale {
+  id          String      @id @default(uuid())
+  total       Decimal     @db.Decimal(10, 2)
+  items       SaleItem[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id          String   @id @default(uuid())
+  saleId      String   @map("sale_id")
+  productId   String   @map("product_id")
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2) @map("unit_price")
+  subtotal    Decimal  @db.Decimal(10, 2)
+  
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@map("sale_items")
+  @@index([saleId])
+  @@index([productId])
 }
