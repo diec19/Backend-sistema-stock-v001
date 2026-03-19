@@ -16,6 +16,11 @@ export const createSale = async (
       return;
     }
 
+    // Verificar si hay una caja abierta
+    const openRegister = await prisma.cashRegister.findFirst({
+      where: { status: 'open' }
+    });
+
     // Usar transacción para garantizar integridad de datos
     const sale = await prisma.$transaction(async (tx) => {
       // Validar stock y calcular totales
@@ -59,10 +64,11 @@ export const createSale = async (
         });
       }
 
-      // Crear la venta con sus items
+      // Crear la venta con sus items (asociada a la caja si existe)
       const newSale = await tx.sale.create({
         data: {
           total,
+          cashRegisterId: openRegister?.id,
           items: {
             create: saleItems
           }

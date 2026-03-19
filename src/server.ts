@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import productsRoutes from './routes/products.routes.js';
 import importRoutes from './routes/import.routes.js';
 import salesRoutes from './routes/sales.routes.js';
+import cashRegisterRoutes from './routes/cashRegister.routes.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.get('/health', (req, res) => {
 app.use('/api/products', productsRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/sales', salesRoutes);
+app.use('/api/cash-register', cashRegisterRoutes);
 
 // Error handling
 app.use(notFound);
