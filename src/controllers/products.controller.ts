@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database.js';
 import { CreateProductDTO, UpdateProductDTO } from '../types/product.types.js';
 
+import { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
+import prisma from '../config/database.js';
+import { CreateProductDTO, UpdateProductDTO } from '../types/product.types.js';
+
 export const getAllProducts = async (
   req: Request,
   res: Response,
@@ -14,10 +19,10 @@ export const getAllProducts = async (
     const limitNumber = parseInt(limit as string);
     const skip = (pageNumber - 1) * limitNumber;
 
-    const where = search ? {
+    const where: Prisma.ProductWhereInput = search ? {
       OR: [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { sku: { contains: search as string, mode: 'insensitive' } }
+        { name: { contains: search as string, mode: Prisma.QueryMode.insensitive } },
+        { sku: { contains: search as string, mode: Prisma.QueryMode.insensitive } }
       ]
     } : {};
 
@@ -184,9 +189,9 @@ export const getStats = async (
       })
     ]);
 
-    const lowStockCount = products.filter((p:any )=> p.stock <= p.minStock).length;
+    const lowStockCount = products.filter(p => p.stock <= p.minStock).length;
     
-    const totalValue = products.reduce((sum: number, p:any) => {
+    const totalValue = products.reduce((sum, p) => {
       return sum + (parseFloat(p.price.toString()) * p.stock);
     }, 0);
 
