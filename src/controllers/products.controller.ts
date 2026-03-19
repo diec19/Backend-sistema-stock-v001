@@ -1,8 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../config/database.js';
-import { CreateProductDTO, UpdateProductDTO } from '../types/product.types.js';
-
-import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/database.js';
 import { CreateProductDTO, UpdateProductDTO } from '../types/product.types.js';
@@ -157,16 +153,13 @@ export const getLowStock = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const products = await prisma.product.findMany({
-      where: {
-        stock: {
-          lte: prisma.product.fields.minStock
-        }
-      },
-      orderBy: { stock: 'asc' }
-    });
+    // Obtenemos todos los productos
+    const allProducts = await prisma.product.findMany();
+    
+    // Filtramos en memoria los que tienen stock bajo
+    const lowStockProducts = allProducts.filter((p:any) => p.stock <= p.minStock);
 
-    res.json(products);
+    res.json(lowStockProducts);
   } catch (error) {
     next(error);
   }
@@ -189,9 +182,9 @@ export const getStats = async (
       })
     ]);
 
-    const lowStockCount = products.filter(p => p.stock <= p.minStock).length;
+    const lowStockCount = products.filter((p:any) => p.stock <= p.minStock).length;
     
-    const totalValue = products.reduce((sum, p) => {
+    const totalValue = products.reduce((sum:any, p:any) => {
       return sum + (parseFloat(p.price.toString()) * p.stock);
     }, 0);
 
