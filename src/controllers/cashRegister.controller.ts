@@ -8,7 +8,18 @@ export const openCashRegister = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { openingAmount, openedBy } = req.body;
+    const { openedBy } = req.body;
+    const openingAmount = parseFloat(String(req.body.openingAmount));
+
+    if (isNaN(openingAmount) || !isFinite(openingAmount) || openingAmount < 0 || openingAmount > 9_999_999.99) {
+      res.status(400).json({ error: 'Monto de apertura inválido. Debe ser un número entre $0 y $9.999.999,99' });
+      return;
+    }
+
+    if (!openedBy || typeof openedBy !== 'string' || !openedBy.trim()) {
+      res.status(400).json({ error: 'El nombre del cajero es requerido' });
+      return;
+    }
 
     // Verificar si hay una caja abierta
     const openRegister = await prisma.cashRegister.findFirst({
@@ -16,16 +27,16 @@ export const openCashRegister = async (
     });
 
     if (openRegister) {
-      res.status(400).json({ 
-        error: 'Ya hay una caja abierta. Cierra la caja actual antes de abrir una nueva.' 
+      res.status(400).json({
+        error: 'Ya hay una caja abierta. Cierra la caja actual antes de abrir una nueva.'
       });
       return;
     }
 
     const cashRegister = await prisma.cashRegister.create({
       data: {
-        openingAmount,
-        openedBy,
+        openingAmount: parseFloat(openingAmount.toFixed(2)),
+        openedBy: openedBy.trim(),
         status: 'open'
       }
     });
@@ -43,7 +54,8 @@ export const closeCashRegister = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { closingAmount, closedBy } = req.body;
+    const { closedBy } = req.body;
+    const closingAmount = parseFloat(String(req.body.closingAmount));
 
     const cashRegister = await prisma.cashRegister.findUnique({
       where: { id }
@@ -88,7 +100,8 @@ export const getCurrentCashRegister = async (
           include: {
             items: true
           }
-        }
+        },
+        expenses: true,
       }
     });
 
@@ -103,13 +116,18 @@ export const getCurrentCashRegister = async (
       return sum + parseFloat(sale.total.toString());
     }, 0);
 
-    const expectedAmount = parseFloat(cashRegister.openingAmount.toString()) + totalRevenue;
+    const totalExpenses = cashRegister.expenses.reduce((sum, expense) => {
+      return sum + parseFloat(expense.amount.toString());
+    }, 0);
+
+    const expectedAmount = parseFloat(cashRegister.openingAmount.toString()) + totalRevenue - totalExpenses;
 
     res.json({
       ...cashRegister,
       stats: {
         totalSales,
         totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        totalExpenses: parseFloat(totalExpenses.toFixed(2)),
         expectedAmount: parseFloat(expectedAmount.toFixed(2))
       }
     });

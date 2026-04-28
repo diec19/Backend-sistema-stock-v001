@@ -29,7 +29,7 @@ services:
     container_name: stock_control_backend
     restart: always
     ports:
-      - "3001:3001"
+      - "3002:3001"
     environment:
       DATABASE_URL: "postgresql://postgres:postgres123@postgres:5432/stock_control?schema=public"
       PORT: 3001
@@ -40,7 +40,6 @@ services:
     volumes:
       - ./src:/app/src
       - ./prisma:/app/prisma
-      - /app/node_modules
     networks:
       - stock_network
 

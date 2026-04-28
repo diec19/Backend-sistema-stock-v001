@@ -37,22 +37,38 @@ model Product {
 }
 
 model CashRegister {
-  id            String   @id @default(uuid())
-  openingAmount Decimal  @db.Decimal(10, 2) @map("opening_amount")
-  closingAmount Decimal? @db.Decimal(10, 2) @map("closing_amount")
-  status        String   @default("open") // open, closed
-  openedBy      String   @map("opened_by")
-  closedBy      String?  @map("closed_by")
-  openedAt      DateTime @default(now()) @map("opened_at")
+  id            String    @id @default(uuid())
+  openingAmount Decimal   @db.Decimal(10, 2) @map("opening_amount")
+  closingAmount Decimal?  @db.Decimal(10, 2) @map("closing_amount")
+  status        String    @default("open") // open, closed
+  openedBy      String    @map("opened_by")
+  closedBy      String?   @map("closed_by")
+  openedAt      DateTime  @default(now()) @map("opened_at")
   closedAt      DateTime? @map("closed_at")
   sales         Sale[]
+  expenses      Expense[]
 
   @@map("cash_registers")
+}
+
+model Expense {
+  id             String       @id @default(uuid())
+  amount         Decimal      @db.Decimal(10, 2)
+  description    String
+  paymentMethod  String       @default("cash") @map("payment_method")
+  createdBy      String       @map("created_by")
+  cashRegisterId String       @map("cash_register_id")
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@map("expenses")
+  @@index([cashRegisterId])
 }
 
 model Sale {
   id              String         @id @default(uuid())
   total           Decimal        @db.Decimal(10, 2)
+  paymentMethod   String         @default("cash") @map("payment_method")
   cashRegisterId  String?        @map("cash_register_id")
   items           SaleItem[]
   createdAt       DateTime       @default(now()) @map("created_at")

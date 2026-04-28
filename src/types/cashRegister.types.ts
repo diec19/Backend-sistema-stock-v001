@@ -1,9 +1,9 @@
 export interface OpenCashRegisterDTO {
-  openingAmount: number;
+  openingAmount: number | string;
   openedBy: string;
 }
 
 export interface CloseCashRegisterDTO {
-  closingAmount: number;
+  closingAmount: number | string;
   closedBy: string;
 }

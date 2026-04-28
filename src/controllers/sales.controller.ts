@@ -9,7 +9,7 @@ export const createSale = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { items } = req.body;
+    const { items, paymentMethod = 'cash' } = req.body;
 
     if (!items || items.length === 0) {
       res.status(400).json({ error: 'La venta debe tener al menos un producto' });
@@ -68,6 +68,7 @@ export const createSale = async (
       const newSale = await tx.sale.create({
         data: {
           total,
+          paymentMethod,
           cashRegisterId: openRegister?.id,
           items: {
             create: saleItems
@@ -101,14 +102,17 @@ export const getAllSales = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { page = '1', limit = '10' } = req.query;
-    
+    const { page = '1', limit = '20', cashRegisterId } = req.query;
+
     const pageNumber = parseInt(page as string);
     const limitNumber = parseInt(limit as string);
     const skip = (pageNumber - 1) * limitNumber;
 
+    const where = cashRegisterId ? { cashRegisterId: cashRegisterId as string } : {};
+
     const [sales, total] = await Promise.all([
       prisma.sale.findMany({
+        where,
         include: {
           items: {
             include: {
@@ -120,7 +124,7 @@ export const getAllSales = async (
         skip,
         take: limitNumber
       }),
-      prisma.sale.count()
+      prisma.sale.count({ where })
     ]);
 
     res.json({

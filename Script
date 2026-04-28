@@ -1,0 +1,140 @@
+-- ============================================
+-- SCRIPT COMPLETO - CONTROL DE STOCK
+-- ============================================
+
+-- 1. TABLA USUARIOS
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'cashier',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
+
+-- 2. TABLA PRODUCTOS
+CREATE TABLE "products" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "sku" TEXT NOT NULL,
+    "price" DECIMAL(10,2) NOT NULL,
+    "stock" INTEGER NOT NULL,
+    "min_stock" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "products_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "products_sku_key" ON "products"("sku");
+CREATE INDEX "products_sku_idx" ON "products"("sku");
+CREATE INDEX "products_name_idx" ON "products"("name");
+
+-- 3. TABLA CAJAS
+CREATE TABLE "cash_registers" (
+    "id" TEXT NOT NULL,
+    "opening_amount" DECIMAL(10,2) NOT NULL,
+    "closing_amount" DECIMAL(10,2),
+    "status" TEXT NOT NULL DEFAULT 'open',
+    "opened_by" TEXT NOT NULL,
+    "closed_by" TEXT,
+    "opened_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "closed_at" TIMESTAMP(3),
+    CONSTRAINT "cash_registers_pkey" PRIMARY KEY ("id")
+);
+
+-- 4. TABLA VENTAS
+CREATE TABLE "sales" (
+    "id" TEXT NOT NULL,
+    "total" DECIMAL(10,2) NOT NULL,
+    "cash_register_id" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "sales_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX "sales_cash_register_id_idx" ON "sales"("cash_register_id");
+
+-- 5. TABLA ITEMS DE VENTA
+CREATE TABLE "sale_items" (
+    "id" TEXT NOT NULL,
+    "sale_id" TEXT NOT NULL,
+    "product_id" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "unit_price" DECIMAL(10,2) NOT NULL,
+    "subtotal" DECIMAL(10,2) NOT NULL,
+    CONSTRAINT "sale_items_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX "sale_items_sale_id_idx" ON "sale_items"("sale_id");
+CREATE INDEX "sale_items_product_id_idx" ON "sale_items"("product_id");
+
+-- 6. FOREIGN KEYS
+ALTER TABLE "sales" ADD CONSTRAINT "sales_cash_register_id_fkey" 
+    FOREIGN KEY ("cash_register_id") REFERENCES "cash_registers"("id") 
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_sale_id_fkey" 
+    FOREIGN KEY ("sale_id") REFERENCES "sales"("id") 
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_product_id_fkey" 
+    FOREIGN KEY ("product_id") REFERENCES "products"("id") 
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- 7. INSERTAR USUARIOS INICIALES
+INSERT INTO "users" (id, username, password, name, role, created_at, updated_at)
+VALUES 
+  (gen_random_uuid(), 'admin', '$2a$10$Xq5Z8hGqY.vN8z0aKJ9fLOwVbZLxN8qYx0OL5sHZEhRqPcXjqN3.K', 'Administrador', 'admin', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'cajero', '$2a$10$v3KqT7ZJ4tYhPQzN9mWRq.VbKxPn5kNxZ2nGqJ8fLOwMbRxN3.Ky', 'Cajero Principal', 'cashier', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  (gen_random_uuid(), 'maria', '$2a$10$YhQzPn5kNxZ2nGqJ8fLOwMbRxN3.KyVbKxPn5kNxZ2nGqJ8fLOwM', 'María García', 'cashier', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+
+
+-- ver todas las tablas
+
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public';
+
+-- ver todas los usuarios
+SELECT id, username, name, role, created_at 
+FROM "users" 
+ORDER BY created_at DESC;
+
+
+--ver todos los productos
+SELECT name, sku, stock, min_stock 
+FROM "products" 
+WHERE stock <= min_stock 
+ORDER BY stock ASC;
+
+
+-- ver ventas del día
+SELECT 
+  s.id,
+  s.total,
+  s.created_at,
+  COUNT(si.id) as items_count
+FROM "sales" s
+LEFT JOIN "sale_items" si ON si.sale_id = s.id
+WHERE DATE(s.created_at) = CURRENT_DATE
+GROUP BY s.id
+ORDER BY s.created_at DESC;
+
+
+-- ver caja abierta
+SELECT * FROM "cash_registers" 
+WHERE status = 'open' 
+ORDER BY opened_at DESC 
+LIMIT 1;
+
+
+-- ver resumen de ventas
+SELECT 
+  (SELECT COUNT(*) FROM products) as total_products,
+  (SELECT COUNT(*) FROM users) as total_users,
+  (SELECT COUNT(*) FROM sales) as total_sales,
+  (SELECT SUM(total) FROM sales) as total_revenue,
+  (SELECT COUNT(*) FROM products WHERE stock <= min_stock) as low_stock_products;

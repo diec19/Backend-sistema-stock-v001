@@ -7,7 +7,10 @@ import productsRoutes from './routes/products.routes.js';
 import importRoutes from './routes/import.routes.js';
 import salesRoutes from './routes/sales.routes.js';
 import cashRegisterRoutes from './routes/cashRegister.routes.js';
+import expenseRoutes from './routes/expense.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import usersRoutes from './routes/users.routes.js';
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 
@@ -39,6 +42,9 @@ app.use('/api/products', authMiddleware, productsRoutes);
 app.use('/api/import', authMiddleware, importRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
 app.use('/api/cash-register', authMiddleware, cashRegisterRoutes);
+app.use('/api/expenses', authMiddleware, expenseRoutes);
+app.use('/api/reports',  authMiddleware, reportsRoutes);
+app.use('/api/users',    authMiddleware, usersRoutes);
 
 // Error handling
 app.use(notFound);

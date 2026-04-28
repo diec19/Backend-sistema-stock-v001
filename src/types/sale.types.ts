@@ -6,6 +6,7 @@ export interface CreateSaleItemDTO {
 
 export interface CreateSaleDTO {
   items: CreateSaleItemDTO[];
+  paymentMethod?: string;
 }
 
 export interface SaleStats {

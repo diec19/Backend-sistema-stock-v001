@@ -35,3 +35,4 @@ prisma/migrations/*.sql
 *.tmp
 *.temp
 EOF
+.env.neon
