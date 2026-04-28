@@ -75,12 +75,12 @@ export const createProduct = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, description, sku, price, stock, minStock } = req.body;
+    const { name, description, sku, price, costPrice, category, stock, minStock } = req.body;
 
     // Validaciones
     if (!name || !sku || price === undefined || stock === undefined || minStock === undefined) {
-      res.status(400).json({ 
-        error: 'Faltan campos requeridos: name, sku, price, stock, minStock' 
+      res.status(400).json({
+        error: 'Faltan campos requeridos: name, sku, price, stock, minStock'
       });
       return;
     }
@@ -91,6 +91,8 @@ export const createProduct = async (
         description: description || '',
         sku,
         price,
+        costPrice: costPrice ?? 0,
+        category: category || '',
         stock: parseInt(stock.toString()),
         minStock: parseInt(minStock.toString())
       }
@@ -109,7 +111,7 @@ export const updateProduct = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, description, sku, price, stock, minStock } = req.body;
+    const { name, description, sku, price, costPrice, category, stock, minStock } = req.body;
 
     const product = await prisma.product.update({
       where: { id },
@@ -118,6 +120,8 @@ export const updateProduct = async (
         ...(description !== undefined && { description }),
         ...(sku && { sku }),
         ...(price !== undefined && { price }),
+        ...(costPrice !== undefined && { costPrice }),
+        ...(category !== undefined && { category }),
         ...(stock !== undefined && { stock: parseInt(stock.toString()) }),
         ...(minStock !== undefined && { minStock: parseInt(minStock.toString()) })
       }
@@ -176,6 +180,7 @@ export const getStats = async (
       prisma.product.findMany({
         select: {
           price: true,
+          costPrice: true,
           stock: true,
           minStock: true
         }
@@ -183,15 +188,20 @@ export const getStats = async (
     ]);
 
     const lowStockCount = products.filter((p:any) => p.stock <= p.minStock).length;
-    
+
     const totalValue = products.reduce((sum:any, p:any) => {
       return sum + (parseFloat(p.price.toString()) * p.stock);
+    }, 0);
+
+    const totalCostValue = products.reduce((sum:any, p:any) => {
+      return sum + (parseFloat(p.costPrice.toString()) * p.stock);
     }, 0);
 
     res.json({
       totalProducts,
       lowStockCount,
-      totalValue: parseFloat(totalValue.toFixed(2))
+      totalValue: parseFloat(totalValue.toFixed(2)),
+      totalCostValue: parseFloat(totalCostValue.toFixed(2))
     });
   } catch (error) {
     next(error);

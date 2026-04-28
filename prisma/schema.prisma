@@ -22,9 +22,11 @@ model User {
 model Product {
   id          String      @id @default(uuid())
   name        String
-  description String
+  description String      @default("")
   sku         String      @unique
   price       Decimal     @db.Decimal(10, 2)
+  costPrice   Decimal     @default(0) @db.Decimal(10, 2) @map("cost_price")
+  category    String      @default("")
   stock       Int
   minStock    Int         @map("min_stock")
   createdAt   DateTime    @default(now()) @map("created_at")
@@ -34,6 +36,7 @@ model Product {
   @@map("products")
   @@index([sku])
   @@index([name])
+  @@index([category])
 }
 
 model CashRegister {

@@ -61,17 +61,82 @@ export const getTopProducts = async (
 
     const products = await prisma.product.findMany({
       where: { id: { in: grouped.map(g => g.productId) } },
-      select: { id: true, name: true, sku: true },
+      select: { id: true, name: true, sku: true, category: true, costPrice: true },
     });
     const productMap = new Map(products.map(p => [p.id, p]));
 
-    res.json(grouped.map(g => ({
-      productId:     g.productId,
-      productName:   productMap.get(g.productId)?.name ?? 'Producto eliminado',
-      sku:           productMap.get(g.productId)?.sku  ?? '-',
-      totalQuantity: g._sum.quantity ?? 0,
-      totalRevenue:  parseFloat((g._sum.subtotal ?? 0).toString()),
-    })));
+    res.json(grouped.map(g => {
+      const p = productMap.get(g.productId);
+      const totalQuantity = g._sum.quantity ?? 0;
+      const totalRevenue  = parseFloat((g._sum.subtotal ?? 0).toString());
+      const costPrice     = parseFloat((p?.costPrice ?? 0).toString());
+      const totalCost     = parseFloat((totalQuantity * costPrice).toFixed(2));
+      const grossProfit   = parseFloat((totalRevenue - totalCost).toFixed(2));
+      return {
+        productId:    g.productId,
+        productName:  p?.name ?? 'Producto eliminado',
+        sku:          p?.sku  ?? '-',
+        category:     p?.category ?? '',
+        totalQuantity,
+        totalRevenue,
+        totalCost,
+        grossProfit,
+      };
+    }));
+  } catch (error) { next(error); }
+};
+
+export const getSalesByCategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const days  = parseInt((req.query.days as string) || '0');
+    const since = sinceDate(days);
+    const itemWhere = since ? { sale: { createdAt: { gte: since } } } : {};
+
+    const grouped = await prisma.saleItem.groupBy({
+      by: ['productId'],
+      _sum: { quantity: true, subtotal: true },
+      where: itemWhere,
+    });
+
+    const products = await prisma.product.findMany({
+      where: { id: { in: grouped.map(g => g.productId) } },
+      select: { id: true, category: true, costPrice: true },
+    });
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    const byCategory: Record<string, { category: string; totalQuantity: number; totalRevenue: number; totalCost: number }> = {};
+
+    grouped.forEach(g => {
+      const product   = productMap.get(g.productId);
+      const category  = product?.category?.trim() || 'Sin categoría';
+      const costPrice = parseFloat((product?.costPrice ?? 0).toString());
+      const qty       = g._sum.quantity ?? 0;
+      const revenue   = parseFloat((g._sum.subtotal ?? 0).toString());
+      const cost      = qty * costPrice;
+
+      if (!byCategory[category]) {
+        byCategory[category] = { category, totalQuantity: 0, totalRevenue: 0, totalCost: 0 };
+      }
+      byCategory[category].totalQuantity += qty;
+      byCategory[category].totalRevenue   = parseFloat((byCategory[category].totalRevenue + revenue).toFixed(2));
+      byCategory[category].totalCost      = parseFloat((byCategory[category].totalCost + cost).toFixed(2));
+    });
+
+    const result = Object.values(byCategory)
+      .map(c => ({
+        ...c,
+        grossProfit: parseFloat((c.totalRevenue - c.totalCost).toFixed(2)),
+        margin: c.totalRevenue > 0
+          ? parseFloat(((c.totalRevenue - c.totalCost) / c.totalRevenue * 100).toFixed(1))
+          : 0,
+      }))
+      .sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+    res.json(result);
   } catch (error) { next(error); }
 };
 

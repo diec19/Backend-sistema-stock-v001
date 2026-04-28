@@ -7,6 +7,8 @@ interface ExcelProduct {
   descripcion: string;
   sku: string;
   precio: number;
+  precio_costo: number;
+  categoria: string;
   stock: number;
   stock_minimo: number;
 }
@@ -58,6 +60,7 @@ export const importProducts = async (
 
         // Validar que precio y stock sean números
         const precio = parseFloat(row.precio?.toString() || '0');
+        const precioCosto = parseFloat(row.precio_costo?.toString() || '0');
         const stock = parseInt(row.stock?.toString() || '0');
         const stockMinimo = parseInt(row.stock_minimo?.toString() || '0');
 
@@ -77,6 +80,8 @@ export const importProducts = async (
             description: row.descripcion?.trim() || '',
             sku: row.sku.trim(),
             price: precio,
+            costPrice: isNaN(precioCosto) ? 0 : precioCosto,
+            category: row.categoria?.trim() || '',
             stock: stock,
             minStock: stockMinimo
           }
@@ -128,6 +133,8 @@ export const downloadTemplate = async (
         descripcion: 'Laptop de alto rendimiento',
         sku: 'LAP-DELL-001',
         precio: 1299.99,
+        precio_costo: 950.00,
+        categoria: 'Electrónica',
         stock: 10,
         stock_minimo: 3
       },
@@ -136,6 +143,8 @@ export const downloadTemplate = async (
         descripcion: 'Mouse inalámbrico',
         sku: 'MOU-LOG-001',
         precio: 79.99,
+        precio_costo: 45.00,
+        categoria: 'Electrónica',
         stock: 25,
         stock_minimo: 5
       }
@@ -150,7 +159,9 @@ export const downloadTemplate = async (
       { wch: 30 }, // nombre
       { wch: 40 }, // descripcion
       { wch: 15 }, // sku
-      { wch: 10 }, // precio
+      { wch: 12 }, // precio
+      { wch: 14 }, // precio_costo
+      { wch: 20 }, // categoria
       { wch: 10 }, // stock
       { wch: 15 }  // stock_minimo
     ];
